@@ -49,23 +49,46 @@ namespace VehiclePosition_Application
 
         private long ComputeCellKey(double latitude, double longitude)
         {
-            // This is a simplified version; you might need a more sophisticated approach for a real-world application
-            int cellSize = 1; // Adjust the cell size based on your data distribution
-            long cellX = (long)(latitude / cellSize);
-            long cellY = (long)(longitude / cellSize);
+            // Adjust the cell size based on your data distribution
+            double cellSize = 1.0;
+            double earthRadius = 6371.0; // Earth's radius in kilometers
+
+            // Convert latitude and longitude to radians
+            double latRad = latitude * (Math.PI / 180.0);
+            double lonRad = longitude * (Math.PI / 180.0);
+
+            // Calculate the horizontal and vertical distance in meters
+            double dx = cellSize * earthRadius * Math.Cos(latRad) * Math.Cos(lonRad);
+            double dy = cellSize * earthRadius * Math.Cos(latRad) * Math.Sin(lonRad);
+
+            // Calculate cell indices
+            long cellX = (long)Math.Floor(dx);
+            long cellY = (long)Math.Floor(dy);
+
+            // Combine cell indices into a single key
             return (cellX << 32) | cellY;
         }
 
         private double CalculateDistance(Coordinate coord1, VehiclePosition position)
         {
-            // Use the Equirectangular approximation for distance calculation
-            double x = (position.Longitude - coord1.Longitude) * Math.Cos((coord1.Latitude + position.Latitude) / 2);
-            double y = position.Latitude - coord1.Latitude;
+            // Equirectangular approximation
+            double lat1 = ToRadians(coord1.Latitude);
+            double lon1 = ToRadians(coord1.Longitude);
+            double lat2 = ToRadians(position.Latitude);
+            double lon2 = ToRadians(position.Longitude);
+
+            double x = (lon2 - lon1) * Math.Cos((lat1 + lat2) / 2);
+            double y = lat2 - lat1;
 
             // Radius of the Earth (in the desired unit)
             double radius = 6371; // Kilometers
 
             return Math.Sqrt(x * x + y * y) * radius;
+        }
+
+        private double ToRadians(double degree)
+        {
+            return degree * (Math.PI / 180);
         }
     }
 }
